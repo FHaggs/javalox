@@ -1,0 +1,21 @@
+package Lox;
+
+import java.util.HashMap;
+import java.util.Map;
+
+class Environment {
+    private final Map<String, Object> values = new HashMap<>();
+
+    public Object get(Token name) {
+        if (values.containsKey(name.lexeme)) {
+            return values.get(name.lexeme);
+        }
+        throw new RuntimeError(name,
+                "Undefined variable '" + name.lexeme + "'.");
+    }
+
+    public void define(String name, Object obj) {
+        values.put(name, obj);
+    }
+
+}

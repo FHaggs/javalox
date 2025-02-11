@@ -1,5 +1,6 @@
 package Lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static Lox.TokenType.*;
@@ -14,12 +15,57 @@ public class Parser {
   Parser(List<Token> tokens) {
     this.tokens = tokens;
   }
-  Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError error) {
+
+  List<Stmt> parse() {
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+      statements.add(declaration());
+    }
+
+    return statements;
+  }
+  private Stmt declaration(){
+    try{
+      if (match(VAR)) {
+        return var_declaration();
+      }
+      return statement();
+    }
+    catch (ParseError error){
+      synchronize();
       return null;
     }
+
+  }
+
+  private Stmt var_declaration(){
+    Token identifier = consume(IDENTIFIER, "Expected a variable name.");
+    Expr initializer = null;
+    if (match(EQUAL)){
+      initializer = expression();
+    }
+    consume(SEMICOLON, "Expected ';' after variable declaration.");
+
+    return new Stmt.Var(identifier, initializer);
+  }
+
+  private Stmt statement() {
+    if (match(PRINT))
+      return printStatement();
+
+    return expressionStatement();
+  }
+
+  private Stmt printStatement() {
+    Expr value = expression();
+    consume(SEMICOLON, "Expect ';' after value.");
+    return new Stmt.Print(value);
+  }
+
+  private Stmt expressionStatement() {
+    Expr value = expression();
+    consume(SEMICOLON, "Expected ';' after expression.");
+    return new Stmt.Expression(value);
   }
 
   private Expr expression() {
@@ -96,6 +142,10 @@ public class Parser {
       return new Expr.Literal(previous().literal);
     }
 
+    if (match(IDENTIFIER)){
+      return new Expr.Variable(previous());
+    }
+
     if (match(LEFT_PAREN)) {
       Expr expr = expression();
       consume(RIGHT_PAREN, "Expect ')' after expression.");
@@ -143,11 +193,13 @@ public class Parser {
     App.error(token, message);
     return new ParseError();
   }
+
   private void synchronize() {
     advance();
 
     while (!isAtEnd()) {
-      if (previous().type == SEMICOLON) return;
+      if (previous().type == SEMICOLON)
+        return;
 
       switch (peek().type) {
         case CLASS:
@@ -164,7 +216,6 @@ public class Parser {
       advance();
     }
   }
-
 
   private Token consume(TokenType type, String message) {
     if (check(type))
