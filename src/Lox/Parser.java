@@ -24,24 +24,24 @@ public class Parser {
 
     return statements;
   }
-  private Stmt declaration(){
-    try{
+
+  private Stmt declaration() {
+    try {
       if (match(VAR)) {
         return var_declaration();
       }
       return statement();
-    }
-    catch (ParseError error){
+    } catch (ParseError error) {
       synchronize();
       return null;
     }
 
   }
 
-  private Stmt var_declaration(){
+  private Stmt var_declaration() {
     Token identifier = consume(IDENTIFIER, "Expected a variable name.");
     Expr initializer = null;
-    if (match(EQUAL)){
+    if (match(EQUAL)) {
       initializer = expression();
     }
     consume(SEMICOLON, "Expected ';' after variable declaration.");
@@ -69,8 +69,27 @@ public class Parser {
   }
 
   private Expr expression() {
-    return equality();
+    return assignment();
 
+  }
+
+  private Expr assignment() {
+    Expr expr = equality();
+
+    if (match(EQUAL)) {
+      Token equals = previous();
+      // r-value
+      Expr value = assignment();
+
+      if (expr instanceof Expr.Variable) {
+        Token name = ((Expr.Variable) expr).name;
+        return new Expr.Assign(name, value);
+      }
+
+      error(equals, "Invalid assignment target.");
+    }
+
+    return expr;
   }
 
   private Expr equality() {
@@ -142,7 +161,7 @@ public class Parser {
       return new Expr.Literal(previous().literal);
     }
 
-    if (match(IDENTIFIER)){
+    if (match(IDENTIFIER)) {
       return new Expr.Variable(previous());
     }
 
