@@ -1,0 +1,11 @@
+var a = 12 > 3;
+
+if(a){
+    print "A";
+}
+if(0> 10){
+    print "B";
+}
+else{
+    print "FALSESES";
+}

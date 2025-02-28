@@ -10,6 +10,7 @@ import Lox.Expr.Unary;
 import Lox.Expr.Variable;
 import Lox.Stmt.Block;
 import Lox.Stmt.Expression;
+import Lox.Stmt.If;
 import Lox.Stmt.Print;
 import Lox.Stmt.Var;
 
@@ -213,6 +214,18 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         environment.assign(expr.name, value);
 
         return value;
+    }
+
+    @Override
+    public Void visitIfStmt(If stmt) {
+        if(isTruthy(evaluate(stmt.expression))){
+            execute(stmt.thenBranch);
+        }
+        else if(stmt.elseBranch != null){
+            execute(stmt.elseBranch);
+        }
+        return null;
+
     }
 
 }
