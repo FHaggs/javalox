@@ -44,8 +44,26 @@ public class App {
       String line = reader.readLine();
       if (line == null)
         break;
-      run(line);
+      if(line.contains(";")){
+        run(line);
+      }
+      else{
+        run_expr(line);
+      }
     }
+  }
+  private static void run_expr(String source) {
+    Scanner scanner = new Scanner(source);
+    List<Token> tokens = scanner.scanTokens();
+    Parser parser = new Parser(tokens);
+    Expr expr = parser.parse_expr();
+
+    // Stop if there was a syntax error.
+    if (hadError)
+      return;
+
+    Object eval = interpreter.evaluate(expr);
+    System.out.println(eval);
   }
 
   private static void run(String source) {

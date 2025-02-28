@@ -1,8 +1,5 @@
 package Lox;
 
-import static Lox.TokenType.SLASH;
-import static Lox.TokenType.STAR;
-
 import java.util.List;
 
 import Lox.Expr.Assign;
@@ -11,13 +8,13 @@ import Lox.Expr.Grouping;
 import Lox.Expr.Literal;
 import Lox.Expr.Unary;
 import Lox.Expr.Variable;
+import Lox.Stmt.Block;
 import Lox.Stmt.Expression;
 import Lox.Stmt.Print;
 import Lox.Stmt.Var;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
-    private Environment environment  = new Environment();
-
+    private Environment environment = new Environment();
 
     @Override
     public Object visitBinaryExpr(Binary expr) {
@@ -128,12 +125,31 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return true;
     }
 
-    private Object evaluate(Expr expr) {
+    public Object evaluate(Expr expr) {
         return expr.accept(this);
     }
 
     private void execute(Stmt stmt) {
         stmt.accept(this);
+    }
+
+    @Override
+    public Void visitBlockStmt(Block stmt) {
+        executeBlock(stmt.statements, new Environment(environment));
+        return null;
+    }
+
+    void executeBlock(List<Stmt> statements, Environment environment) {
+        Environment previous = this.environment;
+        try {
+            this.environment = environment;
+
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.environment = previous;
+        }
     }
 
     private String stringify(Object object) {
@@ -178,7 +194,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitVarStmt(Var stmt) {
         Object value = null;
-        if (stmt.initializer != null){
+        if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
         }
 
