@@ -10,6 +10,7 @@ import Lox.Expr.Logical;
 import Lox.Expr.Unary;
 import Lox.Expr.Variable;
 import Lox.Stmt.Block;
+import Lox.Stmt.Break;
 import Lox.Stmt.Expression;
 import Lox.Stmt.If;
 import Lox.Stmt.Print;
@@ -18,7 +19,7 @@ import Lox.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Environment environment = new Environment();
-
+    private boolean shouldBreak = false;
     @Override
     public Object visitBinaryExpr(Binary expr) {
         Object left = evaluate(expr.left);
@@ -248,8 +249,18 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitWhileStmt(While stmt) {
         while (isTruthy(evaluate(stmt.condition))) {
+            shouldBreak = false;
             execute(stmt.body);
+            if(shouldBreak){
+                break;
+            }
         }
+        return null;
+    }
+
+    @Override
+    public Void visitBreakStmt(Break stmt) {
+        shouldBreak = true;
         return null;
     }
 
