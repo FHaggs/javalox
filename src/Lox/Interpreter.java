@@ -6,6 +6,7 @@ import Lox.Expr.Assign;
 import Lox.Expr.Binary;
 import Lox.Expr.Grouping;
 import Lox.Expr.Literal;
+import Lox.Expr.Logical;
 import Lox.Expr.Unary;
 import Lox.Expr.Variable;
 import Lox.Stmt.Block;
@@ -13,6 +14,7 @@ import Lox.Stmt.Expression;
 import Lox.Stmt.If;
 import Lox.Stmt.Print;
 import Lox.Stmt.Var;
+import Lox.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Environment environment = new Environment();
@@ -218,14 +220,37 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitIfStmt(If stmt) {
-        if(isTruthy(evaluate(stmt.expression))){
+        if (isTruthy(evaluate(stmt.expression))) {
             execute(stmt.thenBranch);
-        }
-        else if(stmt.elseBranch != null){
+        } else if (stmt.elseBranch != null) {
             execute(stmt.elseBranch);
         }
         return null;
 
+    }
+
+    @Override
+    public Object visitLogicalExpr(Logical expr) {
+        Object left = expr.left;
+
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruthy(left))
+                return left;
+        } else {
+            if (!isTruthy(left))
+                return left;
+        }
+
+        return evaluate(expr);
+
+    }
+
+    @Override
+    public Void visitWhileStmt(While stmt) {
+        while (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body);
+        }
+        return null;
     }
 
 }
