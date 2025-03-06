@@ -1,9 +1,11 @@
 package Lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import Lox.Expr.Assign;
 import Lox.Expr.Binary;
+import Lox.Expr.Call;
 import Lox.Expr.Grouping;
 import Lox.Expr.Literal;
 import Lox.Expr.Logical;
@@ -18,8 +20,30 @@ import Lox.Stmt.Var;
 import Lox.Stmt.While;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    final Environment globals = new Environment();
     private Environment environment = new Environment();
     private boolean shouldBreak = false;
+
+    Interpreter() {
+        globals.define("clock", new LoxCallable() {
+            @Override
+            public int arity() {
+                return 0;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter,
+                    List<Object> arguments) {
+                return (double) System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public String toString() {
+                return "<native fn>";
+            }
+        });
+    }
+
     @Override
     public Object visitBinaryExpr(Binary expr) {
         Object left = evaluate(expr.left);
@@ -251,7 +275,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         while (isTruthy(evaluate(stmt.condition))) {
             shouldBreak = false;
             execute(stmt.body);
-            if(shouldBreak){
+            if (shouldBreak) {
                 break;
             }
         }
@@ -261,6 +285,34 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitBreakStmt(Break stmt) {
         shouldBreak = true;
+        return null;
+    }
+
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        Object callee = evaluate(expr.callee);
+
+        List<Object> arguments = new ArrayList<>();
+        for (Expr argument : expr.arguments) {
+            arguments.add(evaluate(argument));
+        }
+        if (!(callee instanceof LoxCallable)) {
+            throw new RuntimeError(expr.paren,
+                    "Can only call functions and classes.");
+        }
+        LoxCallable function = (LoxCallable) callee;
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(expr.paren, "Expected " +
+                    function.arity() + " arguments but got " +
+                    arguments.size() + ".");
+        }
+        return function.call(this, arguments);
+    }
+
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        LoxFunction function = new LoxFunction(stmt);
+        environment.define(stmt.name.lexeme, function);
         return null;
     }
 
